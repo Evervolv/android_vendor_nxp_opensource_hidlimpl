@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -27,37 +27,48 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define LOG_TAG "vendor.nxp.hardware.nfc@1.1-service"
-
-#include <android/hardware/nfc/1.1/INfc.h>
-#include <vendor/nxp/hardware/nfc/1.0/INqNfc.h>
-
-#include <hidl/LegacySupport.h>
-#include "Nfc.h"
+#include <hardware/hardware.h>
+#include <log/log.h>
 #include "NqNfc.h"
+#include "phNxpNciHal_Adaptation.h"
 
-using android::hardware::configureRpcThreadpool;
-using android::hardware::joinRpcThreadpool;
-using android::hardware::nfc::V1_1::INfc;
-using vendor::nxp::hardware::nfc::V1_0::INqNfc;
-using android::hardware::nfc::V1_1::implementation::Nfc;
-using vendor::nxp::hardware::nfc::V1_0::implementation::NqNfc;
-using android::OK;
-using android::sp;
-using android::status_t;
+namespace vendor {
+namespace nxp {
+namespace hardware {
+namespace nfc {
+namespace V1_0 {
+namespace implementation {
 
-int main() {
-    configureRpcThreadpool(1, true /*callerWillJoin*/);
-    status_t status;
+// Methods from ::vendor::nxp::hardware::nfc::V1_0::INqNfc follow.
+Return<void> NqNfc::ioctl(uint64_t ioctlType, const hidl_vec<uint8_t>& inputData, ioctl_cb _hidl_cb) {
+    uint32_t status;
+    nfc_nci_IoctlInOutData_t inpOutData;
+    NfcData  outputData;
 
-    sp<INfc> nfc_service = new Nfc();
-    status = nfc_service->registerAsService();
-    LOG_ALWAYS_FATAL_IF(status != OK, "Error while registering nfc AOSP service: %d", status);
+    nfc_nci_IoctlInOutData_t *pInOutData = (nfc_nci_IoctlInOutData_t*)&inputData[0];
 
-    sp<INqNfc> nq_nfc_service = new NqNfc();
-    status = nq_nfc_service->registerAsService();
-    LOG_ALWAYS_FATAL_IF(status != OK, "Error while registering nqnfc vendor service: %d", status);
+    /*
+     * data from proxy->stub is copied to local data which can be updated by
+     * underlying HAL implementation since its an inout argument
+     */
+    memcpy(&inpOutData, pInOutData, sizeof(nfc_nci_IoctlInOutData_t));
+    status = phNxpNciHal_ioctl(ioctlType, &inpOutData);
 
-    joinRpcThreadpool();
-    return status;
+    /*
+     * copy data and additional fields indicating status of ioctl operation
+     * and context of the caller. Then invoke the corresponding proxy callback
+     */
+    inpOutData.out.ioctlType = ioctlType;
+    inpOutData.out.context = pInOutData->inp.context;
+    inpOutData.out.result = status;
+    outputData.setToExternal((uint8_t*)&inpOutData.out, sizeof(nfc_nci_ExtnOutputData_t));
+    _hidl_cb(outputData);
+    return Void();
 }
+
+}  // namespace implementation
+}  // namespace V1_0
+}  // namespace nfc
+}  // namespace hardware
+}  // namespace nxp
+}  // namespace vendor
