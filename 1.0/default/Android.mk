@@ -14,7 +14,6 @@ LOCAL_SHARED_LIBRARIES := \
 	libdl \
 	libbase \
 	libutils \
-	libhwbinder \
 	libhardware_legacy \
 	libhardware \
 

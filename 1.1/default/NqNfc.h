@@ -56,8 +56,6 @@ using ::android::sp;
 struct NqNfc : public INqNfc {
     // Methods from ::vendor::nxp::hardware::nfc::V1_0::INqNfc follow.
     Return<void> ioctl(uint64_t ioctlType, const hidl_vec<uint8_t>& inputData, ioctl_cb _hidl_cb) override;
-
-    // Methods from ::android::hidl::base::V1_0::IBase follow.
 };
 
 }  // namespace implementation
