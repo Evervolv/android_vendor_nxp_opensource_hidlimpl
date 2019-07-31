@@ -85,7 +85,7 @@ Return<void> NqNfc::getNfcChipId(getNfcChipId_cb _hidl_cb) {
          * In the case of a failure, phNxpNciHal_getNfcChipId returns NULL.
          * Because we need to call _hidl_cb(value) anyway, we can set that here.
          */
-        value = NULL;
+        value = "";
     }
     else {
         value = hal_api_s->phNxpNciHal_getNfcChipId();
@@ -102,7 +102,7 @@ Return<void> NqNfc::getNfcFirmwareVersion(getNfcFirmwareVersion_cb _hidl_cb) {
          * In the case of a failure, phNxpNciHal_getNfcFirmwareVersion returns NULL.
          * Because we need to call _hidl_cb(value) anyway, we can set that here.
          */
-        value = NULL;
+        value = "";
     }
     else {
         value = hal_api_s->phNxpNciHal_getNfcFirmwareVersion();
