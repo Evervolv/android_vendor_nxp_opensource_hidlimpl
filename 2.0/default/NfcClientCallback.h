@@ -60,9 +60,6 @@ struct NfcClientCallback : public INfcClientCallback {
 
 };
 
-// FIXME: most likely delete, this is only for passthrough implementations
-// extern "C" INfcClientCallback* HIDL_FETCH_INfcClientCallback(const char* name);
-
 }  // namespace implementation
 }  // namespace V1_1
 }  // namespace nfc

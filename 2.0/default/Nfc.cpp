@@ -17,6 +17,7 @@
  ******************************************************************************/
 /*
  * Copyright (c) 2018, The Linux Foundation. All rights reserved.
+ * Not a contribution.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -44,12 +45,11 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define LOG_TAG "android.hardware.nfc@1.1-impl"
+#define LOG_TAG "android.hardware.nfc@1.2-impl"
 #include <log/log.h>
 #include "Nfc.h"
 #include "phNxpNciHal_Adaptation.h"
 #include "phNfcStatus.h"
-#include "NfcApiGet.h"
 
 #define CHK_STATUS(x) ((x) == NFCSTATUS_SUCCESS) \
       ? (V1_0::NfcStatus::OK) : (V1_0::NfcStatus::FAILED)
@@ -59,7 +59,7 @@ extern bool nfc_debug_enabled;
 namespace android {
 namespace hardware {
 namespace nfc {
-namespace V1_1 {
+namespace V1_2 {
 namespace implementation {
 
 sp<V1_1::INfcClientCallback> Nfc::mCallbackV1_1 = nullptr;
@@ -80,14 +80,7 @@ Return<V1_0::NfcStatus> Nfc::open_1_1(
 // Methods from ::android::hardware::nfc::V1_0::INfc follow.
 Return<V1_0::NfcStatus> Nfc::open(
     const sp<V1_0::INfcClientCallback>& clientCallback) {
-  ALOGD("Nfc::open - Attempting to retrieve HAL library");
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    ALOGE("GetHalApiStruct() returned null - dynamic API loading failed! Returning status FAILED");
-    // Return early as we don't want to make a call to nullptr hal_api_s
-    return CHK_STATUS(NFCSTATUS_FAILED);
-  }
-
+  ALOGD_IF(nfc_debug_enabled, "Nfc::open Enter");
   if (clientCallback == nullptr) {
     ALOGD_IF(nfc_debug_enabled, "Nfc::open null callback");
     return V1_0::NfcStatus::FAILED;
@@ -96,56 +89,32 @@ Return<V1_0::NfcStatus> Nfc::open(
     mCallbackV1_0->linkToDeath(this, 0 /*cookie*/);
   }
 
-  NFCSTATUS status = hal_api_s->phNxpNciHal_open(eventCallback, dataCallback);
-  ALOGD_IF(nfc_debug_enabled, "Nfc::open(): exit");
+  NFCSTATUS status = phNxpNciHal_open(eventCallback, dataCallback);
+  ALOGD_IF(nfc_debug_enabled, "Nfc::open Exit");
   return CHK_STATUS(status);
 }
 
 Return<uint32_t> Nfc::write(const hidl_vec<uint8_t>& data) {
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    // Don't check status as return type expects a uint32?
-    return NFCSTATUS_FAILED;
-  }
   hidl_vec<uint8_t> copy = data;
-  return hal_api_s->phNxpNciHal_write(copy.size(), &copy[0]);
+  return phNxpNciHal_write(copy.size(), &copy[0]);
 }
 
 Return<V1_0::NfcStatus> Nfc::coreInitialized(const hidl_vec<uint8_t>& data) {
-
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    return CHK_STATUS(NFCSTATUS_FAILED);
-  }
-
   hidl_vec<uint8_t> copy = data;
-  NFCSTATUS status = hal_api_s->phNxpNciHal_core_initialized(&copy[0]);
+  NFCSTATUS status = phNxpNciHal_core_initialized(&copy[0]);
   return CHK_STATUS(status);
 }
 
 Return<V1_0::NfcStatus> Nfc::prediscover() {
-
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    return CHK_STATUS(NFCSTATUS_FAILED);
-  }
-
-  NFCSTATUS status = hal_api_s->phNxpNciHal_pre_discover();
+  NFCSTATUS status = phNxpNciHal_pre_discover();
   return CHK_STATUS(status);
 }
 
 Return<V1_0::NfcStatus> Nfc::close() {
-  ALOGD_IF(nfc_debug_enabled, "Calling Nfc::close()");
   if (mCallbackV1_1 == nullptr && mCallbackV1_0 == nullptr) {
     return V1_0::NfcStatus::FAILED;
   }
-
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    return CHK_STATUS(NFCSTATUS_FAILED);
-  }
-
-  NFCSTATUS status = hal_api_s->phNxpNciHal_close(false);
+  NFCSTATUS status = phNxpNciHal_close(false);
 
   if (mCallbackV1_1 != nullptr) {
     mCallbackV1_1->unlinkToDeath(this);
@@ -155,42 +124,22 @@ Return<V1_0::NfcStatus> Nfc::close() {
     mCallbackV1_0->unlinkToDeath(this);
     mCallbackV1_0 = nullptr;
   }
-
-  // Before closing, unload HAL API Struct
-  unloadHalApiStruct();
   return CHK_STATUS(status);
 }
 
 Return<V1_0::NfcStatus> Nfc::controlGranted() {
-
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    return CHK_STATUS(NFCSTATUS_FAILED);
-  }
-
-  NFCSTATUS status = hal_api_s->phNxpNciHal_control_granted();
+  NFCSTATUS status = phNxpNciHal_control_granted();
   return CHK_STATUS(status);
 }
 
 Return<V1_0::NfcStatus> Nfc::powerCycle() {
-
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    return CHK_STATUS(NFCSTATUS_FAILED);
-  }
-
-  NFCSTATUS status = hal_api_s->phNxpNciHal_power_cycle();
+  NFCSTATUS status = phNxpNciHal_power_cycle();
   return CHK_STATUS(status);
 }
 
 // Methods from ::android::hardware::nfc::V1_1::INfc follow.
 Return<void> Nfc::factoryReset() {
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    return Void();
-  }
-
-  hal_api_s->phNxpNciHal_do_factory_reset();
+  phNxpNciHal_do_factory_reset();
   return Void();
 }
 
@@ -198,13 +147,7 @@ Return<V1_0::NfcStatus> Nfc::closeForPowerOffCase() {
   if (mCallbackV1_1 == nullptr && mCallbackV1_0 == nullptr) {
     return V1_0::NfcStatus::FAILED;
   }
-
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    return CHK_STATUS(NFCSTATUS_FAILED);
-  }
-
-  NFCSTATUS status = hal_api_s->phNxpNciHal_configDiscShutdown();
+  NFCSTATUS status = phNxpNciHal_configDiscShutdown();
 
   if (mCallbackV1_1 != nullptr) {
     mCallbackV1_1->unlinkToDeath(this);
@@ -218,17 +161,15 @@ Return<V1_0::NfcStatus> Nfc::closeForPowerOffCase() {
 }
 
 Return<void> Nfc::getConfig(getConfig_cb hidl_cb) {
-  NfcConfig nfcVendorConfig = {};
-
-  hal_api_struct_t *hal_api_s = getHalApiStruct();
-  if (hal_api_s == nullptr) {
-    hidl_cb(nfcVendorConfig);
-  }
-  else {
-    hal_api_s->phNxpNciHal_getVendorConfig(nfcVendorConfig);
-    hidl_cb(nfcVendorConfig);
-  }
-
+  android::hardware::nfc::V1_1::NfcConfig nfcVendorConfig;
+  phNxpNciHal_getVendorConfig(nfcVendorConfig);
+  hidl_cb(nfcVendorConfig);
+  return Void();
+}
+Return<void> Nfc::getConfig_1_2(getConfig_1_2_cb hidl_cb) {
+  NfcConfig nfcVendorConfig;
+  phNxpNciHal_getVendorConfig_1_2(nfcVendorConfig);
+  hidl_cb(nfcVendorConfig);
   return Void();
 }
 
