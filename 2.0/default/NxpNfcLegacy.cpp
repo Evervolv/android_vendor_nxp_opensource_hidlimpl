@@ -18,8 +18,10 @@
 #include <log/log.h>
 
 #include "NxpNfcLegacy.h"
-#include "phNxpNciHal.h"
-#include <phTmlNfc.h>
+
+#include "phNfcStatus.h"
+#include "NfcApiGet.h"
+#include "phNxpNciHal_Common.h"
 
 extern bool nfc_debug_enabled;
 
@@ -35,14 +37,23 @@ NxpNfcLegacy::setEseState(NxpNfcHalEseState EseState) {
   NFCSTATUS status = NFCSTATUS_FAILED;
   ALOGD("NxpNfcLegacy::setEseState Entry");
 
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+      /*
+       * In the case of a failure, return status failed.
+       */
+       return status;
+  }
+
+
   if(EseState == NxpNfcHalEseState::HAL_NFC_ESE_IDLE_MODE)
   {
     ALOGD("NxpNfcLegacy::setEseState state == HAL_NFC_ESE_IDLE_MODE");
-    status = phNxpNciHal_setEseState(phNxpNciHalNfc_e_SetIdleMode);
+    status = hal_api_s->phNxpNciHal_setEseState(phNxpNciHalNfc_e_SetIdleMode);
   }
   if (EseState == NxpNfcHalEseState::HAL_NFC_ESE_WIRED_MODE) {
     ALOGD("NxpNfcLegacy::setEseState state == HAL_NFC_ESE_WIRED_MODE");
-    status = phNxpNciHal_setEseState(phNxpNciHalNfc_e_SetWiredMode);
+    status = hal_api_s->phNxpNciHal_setEseState(phNxpNciHalNfc_e_SetWiredMode);
   }
 
   ALOGD("NxpNfcLegacy::setEseState Exit");
@@ -51,9 +62,14 @@ NxpNfcLegacy::setEseState(NxpNfcHalEseState EseState) {
 
 Return<uint8_t>
 NxpNfcLegacy::getchipType() {
-  uint8_t chiptype;
+  uint8_t chiptype = 0;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return 0;
+  }
+
   ALOGD("NxpNfcLegacy::getchipType Entry");
-  chiptype = phNxpHal_getchipType();
+  chiptype = hal_api_s->phNxpHal_getchipType();
   ALOGD("NxpNfcLegacy::getchipType Exit");
   return chiptype;
 }
@@ -61,8 +77,13 @@ NxpNfcLegacy::getchipType() {
 Return<uint16_t>
 NxpNfcLegacy::setNfcServicePid(uint64_t pid) {
   NFCSTATUS status = NFCSTATUS_FAILED;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return status;
+  }
+
   ALOGD("NxpNfcLegacy::setNfcServicePid Entry");
-  status = phNxpNciHal_setNfcServicePid(pid);
+  status = hal_api_s->phNxpNciHal_setNfcServicePid(pid);
   ALOGD("NxpNfcLegacy::setNfcServicePid Exit");
   return status;
 }
@@ -70,8 +91,13 @@ NxpNfcLegacy::setNfcServicePid(uint64_t pid) {
 Return<uint16_t>
 NxpNfcLegacy::getEseState() {
   NFCSTATUS status = NFCSTATUS_FAILED;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return status;
+  }
+
   ALOGD("NxpNfcLegacy::getEseState Entry");
-  status = phNxpNciHal_getEseState();
+  status = hal_api_s->phNxpNciHal_getEseState();
   ALOGD("NxpNfcLegacy::getEseState Exit");
   return status;
 }
@@ -79,9 +105,13 @@ NxpNfcLegacy::getEseState() {
 Return<uint16_t>
 NxpNfcLegacy::spiDwpSync(uint32_t level) {
   uint16_t status = 0;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return status;
+  }
 
   ALOGD("NxpNfcLegacy::spiDwpSync Entry");
-  status = phNxpNciHal_ReleaseSVDDWait(level);
+  status = hal_api_s->phNxpNciHal_ReleaseSVDDWait(level);
 
   ALOGD("NxpNfcLegacy::spiDwpSync Exit");
   return status;
@@ -90,9 +120,13 @@ NxpNfcLegacy::spiDwpSync(uint32_t level) {
 Return<uint16_t>
 NxpNfcLegacy::RelForceDwpOnOffWait(uint32_t level) {
   uint16_t status = 0;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return status;
+  }
 
   ALOGD("NxpNfcLegacy::RelForceDwpOnOffWait Entry");
-  status = phNxpNciHal_ReleaseDWPOnOffWait(level);
+  status = hal_api_s->phNxpNciHal_ReleaseDWPOnOffWait(level);
 
   ALOGD("NxpNfcLegacy::RelForceDwpOnOffWait Exit");
   return status;
@@ -101,9 +135,13 @@ NxpNfcLegacy::RelForceDwpOnOffWait(uint32_t level) {
 Return<int8_t>
 NxpNfcLegacy::getSPMStatus(uint32_t level) {
   int8_t status = -1;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return status;
+  }
 
   ALOGD("NxpNfcLegacy::getSPMStatus Entry");
-  status = phNxpNciHal_getSPMStatus(level);
+  status = hal_api_s->phNxpNciHal_getSPMStatus(level);
 
   ALOGD("NxpNfcLegacy::getSPMStatus Exit");
   return status;
@@ -112,17 +150,21 @@ NxpNfcLegacy::getSPMStatus(uint32_t level) {
 Return<int32_t>
 NxpNfcLegacy::hciInitUpdateState(NfcHciInitStatus HciStatus) {
   int32_t status = 0;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return status;
+  }
 
   ALOGD("NxpNfcLegacy::hciInitUpdateState Entry");
   if (HciStatus == NfcHciInitStatus::NFC_HCI_INIT_START)
   {
     ALOGD("NxpNfcLegacy::hciInitUpdateState state == NFC_HCI_INIT_START");
-    phNxpNciHal_hciInitUpdateState(phNxpNfcHciInitStatus_e_Start);
+    hal_api_s->phNxpNciHal_hciInitUpdateState(phNxpNfcHciInitStatus_e_Start);
   }
   else if (HciStatus == NfcHciInitStatus::NFC_HCI_INIT_COMPLETE)
   {
     ALOGD("NxpNfcLegacy::hciInitUpdateState state == NFC_HCI_INIT_COMPLETE");
-    phNxpNciHal_hciInitUpdateState(phNxpNfcHciInitStatus_e_Complete);
+    hal_api_s->phNxpNciHal_hciInitUpdateState(phNxpNfcHciInitStatus_e_Complete);
   }
   ALOGD("NxpNfcLegacy::hciInitUpdateState Exit");
   return status;
@@ -131,10 +173,14 @@ NxpNfcLegacy::hciInitUpdateState(NfcHciInitStatus HciStatus) {
 Return<int32_t>
 NxpNfcLegacy::hciInitUpdateStateComplete() {
   int32_t status = 0;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return status;
+  }
 
   ALOGD("NxpNfcLegacy::hciInitUpdateStateComplete Entry");
 
-  status = phNxpNciHal_hciInitUpdateStateComplete();
+  status = hal_api_s->phNxpNciHal_hciInitUpdateStateComplete();
 
   ALOGD("NxpNfcLegacy::hciInitUpdateStateComplete Exit");
 
@@ -144,10 +190,13 @@ NxpNfcLegacy::hciInitUpdateStateComplete() {
 Return<void> NxpNfcLegacy::getCachedNfccConfig(getCachedNfccConfig_cb _hidl_cb){
   phNxpNci_getCfg_info_t GetCfg_info;
   NxpNciCfgInfo ConfigData;
-
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return Void();
+  }
   ALOGD("NxpNfcLegacy::GetCachedNfccConfig Entry" );
 
-  phNxpNciHal_GetCachedNfccConfig(&GetCfg_info);
+  hal_api_s->phNxpNciHal_GetCachedNfccConfig(&GetCfg_info);
   memcpy(&ConfigData,&GetCfg_info,sizeof(NxpNciCfgInfo));
   _hidl_cb(ConfigData);
 
@@ -159,8 +208,13 @@ Return<void> NxpNfcLegacy::getNxpConfig(getNxpConfig_cb _hidl_cb)
 {
   phNxpNfcHalConfig localConfigData;
   NxpNfcHalConfig config;
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return Void();
+  }
+
   ALOGD("NxpNfcLegacy::getNxpConfig Entry" );
-  phNxpNciHal_getNxpConfig(&localConfigData);
+  hal_api_s->phNxpNciHal_getNxpConfig(&localConfigData);
   memcpy(&config, &localConfigData, sizeof(NxpNfcHalConfig));
   _hidl_cb(config);
   ALOGD("NxpNfcLegacy::getNxpConfig Exit");
@@ -173,11 +227,16 @@ Return<void> NxpNfcLegacy::nciTransceive( const NxpNciExtnCmd &NciCmd,nciTransce
 
   NxpNciExtnResp nciResp;
 
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr){
+       return Void();
+  }
+
   ALOGD("NxpNfcLegacy::NciTransceive Entry" );
 
   memcpy(&in,&NciCmd,sizeof(NxpNciExtnCmd));
 
-  phNxpNciHal_nciTransceive(&in,&out);
+  hal_api_s->phNxpNciHal_nciTransceive(&in,&out);
 
   memcpy(&nciResp,&out,sizeof(NxpNciExtnResp));
 

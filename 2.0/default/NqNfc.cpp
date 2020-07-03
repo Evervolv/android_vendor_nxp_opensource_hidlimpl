@@ -50,8 +50,9 @@
 #include <hardware/hardware.h>
 #include <log/log.h>
 #include "NqNfc.h"
-#include "phNxpNciHal.h"
 #include "phNxpNciHal_Adaptation.h"
+#include "phNfcStatus.h"
+#include "NfcApiGet.h"
 
 namespace vendor {
 namespace nxp {
@@ -62,35 +63,83 @@ namespace implementation {
 
 // Methods from ::vendor::nxp::hardware::nfc::V2_0::INqNfc follow.
 Return<void> NqNfc::getNfcChipId(getNfcChipId_cb _hidl_cb) {
-    std::string value = phNxpNciHal_getNfcChipId();
+    std::string value;
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return NULL.
+         * Because we need to call _hidl_cb(value) anyway, we can set that here.
+         */
+        value = "";
+    }
+    else {
+        value = hal_api_s->phNxpNciHal_getNfcChipId();
+    }
     _hidl_cb(value);
     return Void();
 }
 
 Return<void> NqNfc::getNfcFirmwareVersion(getNfcFirmwareVersion_cb _hidl_cb) {
-    std::string value = phNxpNciHal_getNfcFirmwareVersion();
+    std::string value;
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return NULL.
+         * Because we need to call _hidl_cb(value) anyway, we can set that here.
+         */
+        value = "";
+    }
+    else {
+        value = hal_api_s->phNxpNciHal_getNfcFirmwareVersion();
+    }
     _hidl_cb(value);
     return Void();
 }
 
 Return<void> NqNfc::getVendorParam(const ::android::hardware::hidl_string &key,
                           getVendorParam_cb _hidl_cb) {
-    string val = phNxpNciHal_getSystemProperty(key);
-    _hidl_cb(val);
+    std::string value;
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return NULL.
+         * Because we need to call _hidl_cb(value) anyway, we can set that here.
+         */
+        value = "";
+    }
+    else {
+        value = hal_api_s->phNxpNciHal_getSystemProperty(key);
+    }
+    _hidl_cb(value);
     return Void();
 }
 
 Return<bool> NqNfc::setVendorParam(const ::android::hardware::hidl_string &key,
                           const ::android::hardware::hidl_string &value) {
-    return phNxpNciHal_setSystemProperty(key, value);
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return false.
+         */
+        return false;
+    }
+    return hal_api_s->phNxpNciHal_setSystemProperty(key, value);
 }
 
-Return<bool> NqNfc::resetEse(uint64_t /* resetType */) {
+Return<bool> NqNfc::resetEse(uint64_t resetType) {
     NFCSTATUS status = NFCSTATUS_FAILED;
     bool ret = false;
 
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return false.
+         */
+        return ret;
+    }
+
     ALOGD("NqNfc::resetEse Entry");
-    status = phNxpNciHal_resetEse();
+    status = hal_api_s->phNxpNciHal_resetEse(resetType);
     if(NFCSTATUS_SUCCESS == status) {
         ret = true;
         status = NFCSTATUS_SUCCESS;
@@ -105,16 +154,24 @@ Return<bool> NqNfc::resetEse(uint64_t /* resetType */) {
 Return<bool> NqNfc::setEseUpdateState(NxpNfcHalEseState eSEState) {
     bool status = false;
 
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return false.
+         */
+        return status;
+    }
+
     ALOGD("NqNfc::setEseUpdateState Entry");
 
     if(eSEState == NxpNfcHalEseState::HAL_NFC_ESE_JCOP_UPDATE_COMPLETED
             || eSEState == NxpNfcHalEseState::HAL_NFC_ESE_LS_UPDATE_COMPLETED) {
         ALOGD("NqNfc::setEseUpdateState state == HAL_NFC_ESE_JCOP_UPDATE_COMPLETED");
-        seteSEClientState((uint8_t)eSEState);
-        eSEClientUpdate_NFC_Thread();
+        hal_api_s->seteSEClientState((uint8_t)eSEState);
+        hal_api_s->eSEClientUpdate_NFC_Thread();
     }
     if (eSEState == NxpNfcHalEseState::HAL_NFC_ESE_UPDATE_COMPLETED) {
-        status = phNxpNciHal_Abort();
+        status = hal_api_s->phNxpNciHal_Abort();
     }
     ALOGD("NqNfc::setEseUpdateState Exit");
     return status;
@@ -123,26 +180,50 @@ Return<bool> NqNfc::setEseUpdateState(NxpNfcHalEseState eSEState) {
 Return<bool> NqNfc::setNxpTransitConfig(const ::android::hardware::hidl_string &strval) {
     bool status = true;
 
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return false.
+         */
+        return false;
+    }
+
     ALOGD("NqNfc::setNxpTransitConfig Entry");
-    status = phNxpNciHal_setNxpTransitConfig((char *)strval.c_str());
+    status = hal_api_s->phNxpNciHal_setNxpTransitConfig((char *)strval.c_str());
     ALOGD("NqNfc::setNxpTransitConfig Exit");
     return status;
 }
 
 Return<bool> NqNfc::isJcopUpdateRequired() {
-    bool status = 0;
+    bool status = false;
+
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return false.
+         */
+        return status;
+    }
 
     ALOGD("NqNfc::isJcopUpdateRequired Entry");
-    status = getJcopUpdateRequired();
+    status = hal_api_s->getJcopUpdateRequired();
     ALOGD("NqNfc::isJcopUpdateRequired Exit");
     return status;
 }
 
 Return<bool> NqNfc::isLsUpdateRequired() {
-    bool status = 0;
+    bool status = false;
+
+    hal_api_struct_t *hal_api_s = getHalApiStruct();
+    if (hal_api_s == nullptr){
+        /*
+         * In the case of a failure, return false.
+         */
+        return status;
+    }
 
     ALOGD("NqNfc::isLsUpdateRequired Entry");
-    status = getLsUpdateRequired();
+    status = hal_api_s->getLsUpdateRequired();
     ALOGD("NqNfc::isLsUpdateRequired Exit");
     return status;
 }
