@@ -16,7 +16,8 @@
  *
  ******************************************************************************/
 /*
- * Copyright (c) 2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018, 2020 The Linux Foundation. All rights reserved.
+ * Not a contribution.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -44,7 +45,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define LOG_TAG "android.hardware.nfc@1.1-impl"
+#define LOG_TAG "android.hardware.nfc@1.2-impl"
 #include <log/log.h>
 #include "Nfc.h"
 #include "phNxpNciHal_Adaptation.h"
@@ -59,7 +60,7 @@ extern bool nfc_debug_enabled;
 namespace android {
 namespace hardware {
 namespace nfc {
-namespace V1_1 {
+namespace V1_2 {
 namespace implementation {
 
 sp<V1_1::INfcClientCallback> Nfc::mCallbackV1_1 = nullptr;
@@ -218,7 +219,7 @@ Return<V1_0::NfcStatus> Nfc::closeForPowerOffCase() {
 }
 
 Return<void> Nfc::getConfig(getConfig_cb hidl_cb) {
-  NfcConfig nfcVendorConfig = {};
+  android::hardware::nfc::V1_1::NfcConfig nfcVendorConfig = {};
 
   hal_api_struct_t *hal_api_s = getHalApiStruct();
   if (hal_api_s == nullptr) {
@@ -226,6 +227,21 @@ Return<void> Nfc::getConfig(getConfig_cb hidl_cb) {
   }
   else {
     hal_api_s->phNxpNciHal_getVendorConfig(nfcVendorConfig);
+    hidl_cb(nfcVendorConfig);
+  }
+
+  return Void();
+}
+
+Return<void> Nfc::getConfig_1_2(getConfig_1_2_cb hidl_cb) {
+  android::hardware::nfc::V1_2::NfcConfig nfcVendorConfig = {};
+
+  hal_api_struct_t *hal_api_s = getHalApiStruct();
+  if (hal_api_s == nullptr) {
+    hidl_cb(nfcVendorConfig);
+  }
+  else {
+    hal_api_s->phNxpNciHal_getVendorConfig_1_2(nfcVendorConfig);
     hidl_cb(nfcVendorConfig);
   }
 

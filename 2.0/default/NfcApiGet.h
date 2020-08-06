@@ -27,46 +27,25 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ANDROID_HARDWARE_NFC_V1_1_NFCCLIENTCALLBACK_H
-#define ANDROID_HARDWARE_NFC_V1_1_NFCCLIENTCALLBACK_H
+#define NQX_FILE_NAME "nfc_nci.nqx.default.hw.so"
+#define SN100X_FILE_NAME "nfc_nci.sn100.default.hw.so"
+#define NQ310_ID 0x40
+#define NQ210_ID 0x48
+#define NQ440_ID 0x51 // Also NQ330
+#define NQ220_ID 0x58
+#define SN100X_ID_A 0xa3
+#define SN100X_ID_B 0xa4
+#define DEV_NODE "/dev/nq-nci"
+#define NFCC_MAGIC 0xE9
+#define NFCC_GET_INFO _IOW(NFCC_MAGIC, 0x09, unsigned int)
+#define STATUS_FAILURE -1
+#define STATUS_SUCCESS 0
 
-#include <android/hardware/nfc/1.1/INfcClientCallback.h>
-#include <hidl/MQDescriptor.h>
-#include <hidl/Status.h>
+#include <phNxpNciHal_utils.h>
+#include <phNfcTypes.h>
+#include "NfcPointers.h"
 
-namespace android {
-namespace hardware {
-namespace nfc {
-namespace V1_1 {
-namespace implementation {
-
-using ::android::hardware::hidl_array;
-using ::android::hardware::hidl_memory;
-using ::android::hardware::hidl_string;
-using ::android::hardware::hidl_vec;
-using ::android::hardware::Return;
-using ::android::hardware::Void;
-using ::android::sp;
-
-struct NfcClientCallback : public INfcClientCallback {
-    // Methods from ::android::hardware::nfc::V1_0::INfcClientCallback follow.
-    Return<void> sendEvent(::android::hardware::nfc::V1_0::NfcEvent event, ::android::hardware::nfc::V1_0::NfcStatus status) override;
-    Return<void> sendData(const hidl_vec<uint8_t>& data) override;
-
-    // Methods from ::android::hardware::nfc::V1_1::INfcClientCallback follow.
-    Return<void> sendEvent_1_1(::android::hardware::nfc::V1_1::NfcEvent event, ::android::hardware::nfc::V1_0::NfcStatus status) override;
-
-    // Methods from ::android::hidl::base::V1_0::IBase follow.
-
-};
-
-// FIXME: most likely delete, this is only for passthrough implementations
-// extern "C" INfcClientCallback* HIDL_FETCH_INfcClientCallback(const char* name);
-
-}  // namespace implementation
-}  // namespace V1_1
-}  // namespace nfc
-}  // namespace hardware
-}  // namespace android
-
-#endif  // ANDROID_HARDWARE_NFC_V1_1_NFCCLIENTCALLBACK_H
+// Returns the initialized hal_api_s, or a null pointer if the struct fails to initialize.
+hal_api_struct_t* getHalApiStruct(void);
+// unloads the linked library and hal_api_s
+void unloadHalApiStruct(void);
